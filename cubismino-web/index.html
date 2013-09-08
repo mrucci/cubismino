@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title>cubismino</title>
+<style>
+@import url(style.css);
+</style>
+<body>
+
+<script src="//cdnjs.cloudflare.com/ajax/libs/d3/3.2.2/d3.v3.min.js"></script>
+<script src="//cdnjs.cloudflare.com/ajax/libs/cubism/1.2.2/cubism.v1.min.js"></script>
+
+<script>
+
+var context = cubism.context()
+    .step(1e4)
+    .size(1440);
+
+function metric(path, title) {
+    var values = new Array(1440)
+    title = title || path
+
+    return context.metric(function(start, stop, step, callback) {
+        start = +start, stop = +stop;
+        d3.json("http://localhost:8127" + path, function(data) {
+            if(parseFloat(data) == NaN) {
+                return callback("Cannot parse as float: " + data + " (" + typeof data + ")")
+            }
+            values.push(parseFloat(data))
+            callback(null, values = values.slice((start - stop) / step));
+        })
+    }, title);
+}
+
+function display(metrics) {
+
+    d3.select("body").selectAll(".axis")
+        .data(["top", "bottom"])
+      .enter().append("div")
+        .attr("class", function(d) { return d + " axis"; })
+        .each(function(d) { d3.select(this).call(context.axis().ticks(12).orient(d)); });
+
+    d3.select("body").append("div")
+        .attr("class", "rule")
+        .call(context.rule());
+
+    d3.select("body").selectAll(".horizon")
+        .data(metrics)
+      .enter().insert("div", ".bottom")
+        .attr("class", "horizon")
+        .call(context.horizon())
+
+    context.on("focus", function(i) {
+        d3.selectAll(".value").style("right", i == null ? null : context.size() - i + "px");
+    });
+}
+
+
+d3.json("http://localhost:8127/", function(data) {
+    if(!data) {
+        return;
+    }
+
+    metrics = []
+    var metricTypes = ["counters", "counter_rates", "gauges"]
+    for(var t=0 ; t< metricTypes.length; t++) {
+        for(var metricName in data[metricTypes[t]]) {
+            metrics.push(metric('/' + metricTypes[t] + '/' + metricName))
+        }
+    }
+
+    for(var metricName in data["timer_data"]) {
+        for(var p=0; p<data["pctThreshold"].length; p++) {
+            percentile = data["pctThreshold"][p]
+            metrics.push(metric('/timer_data/' + metricName + '/mean_' + percentile))
+            metrics.push(metric('/timer_data/' + metricName + '/upper_' + percentile))
+        }
+    }
+
+    display(metrics)
+})
+
+</script>
