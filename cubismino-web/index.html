@@ -11,6 +11,10 @@
 
 <script>
 
+var host = cubism.option("host", location.hostname);
+var port = +cubism.option("port", +location.port-1);
+var endpoint = "http://" + host + ":" + port
+
 var context = cubism.context()
     .step(1e4)
     .size(1440);
@@ -21,7 +25,7 @@ function metric(path, title) {
 
     return context.metric(function(start, stop, step, callback) {
         start = +start, stop = +stop;
-        d3.json("http://localhost:8127" + path, function(data) {
+        d3.json(endpoint + path, function(data) {
             if(parseFloat(data) == NaN) {
                 return callback("Cannot parse as float: " + data + " (" + typeof data + ")")
             }
@@ -55,7 +59,7 @@ function display(metrics) {
 }
 
 
-d3.json("http://localhost:8127/", function(data) {
+d3.json(endpoint + "/", function(data) {
     if(!data) {
         return;
     }
