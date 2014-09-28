@@ -6,8 +6,10 @@ A minimalistic and volatile [statsd][statsd] stack to collect and visualize metr
 
 Run it with docker:
 
+    sudo docker pull ubuntu:14.04
     sudo docker build -t username/cubismino .
-    sudo docker run username/cubismino
+    sudo docker run --rm -p 8125:8125/udp -p 8127:8127 -p 8128:8128 username/cubismino
+
 
 Send some data to statsd:
 
